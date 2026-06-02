@@ -13,13 +13,13 @@ python3 <<'PY'
 import json
 import urllib.request
 
+MC_VERSION = "1.21.1"
 manifest_url = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
 
 with urllib.request.urlopen(manifest_url) as r:
     manifest = json.load(r)
 
-latest = manifest["latest"]["release"]
-version = next(v for v in manifest["versions"] if v["id"] == latest)
+version = next(v for v in manifest["versions"] if v["id"] == MC_VERSION)
 
 with urllib.request.urlopen(version["url"]) as r:
     data = json.load(r)
@@ -27,7 +27,7 @@ with urllib.request.urlopen(version["url"]) as r:
 server_url = data["downloads"]["server"]["url"]
 urllib.request.urlretrieve(server_url, "server.jar")
 
-print("Downloaded Minecraft version:", latest)
+print("Downloaded Minecraft version:", MC_VERSION)
 PY
 
 cat > eula.txt <<'EOF'
@@ -52,7 +52,7 @@ After=network-online.target
 [Service]
 User=minecraft
 WorkingDirectory=/opt/minecraft/server
-ExecStart=/usr/bin/java -Xms1G -Xmx2G -jar server.jar nogui
+ExecStart=/usr/bin/java -Xms512M -Xmx1G -jar server.jar nogui
 Restart=on-failure
 KillSignal=SIGINT
 TimeoutStopSec=120

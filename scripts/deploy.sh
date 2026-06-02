@@ -62,10 +62,22 @@ COMMAND_ID="$(aws ssm send-command \
   --query "Command.CommandId" \
   --output text)"
 
-aws ssm wait command-executed \
-  --region "$REGION" \
-  --command-id "$COMMAND_ID" \
-  --instance-id "$INSTANCE_ID"
+echo "Waiting for setup command to finish..."
+while true; do
+  STATUS="$(aws ssm get-command-invocation --region "$REGION" --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID" --query "Status" --output text 2>/dev/null || true)"
+  echo "SSM command status: $STATUS"
+
+  if [ "$STATUS" = "Success" ]; then
+    break
+  fi
+
+  if [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Cancelled" ] || [ "$STATUS" = "TimedOut" ]; then
+    aws ssm get-command-invocation --region "$REGION" --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID" --query "StandardErrorContent" --output text
+    exit 1
+  fi
+
+  sleep 30
+done
 
 aws ssm get-command-invocation \
   --region "$REGION" \
